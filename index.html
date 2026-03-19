@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Horas Extra">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Horas Extra</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pri: #4F46E5;
+      --pri-dk: #3730A3;
+      --pri-lt: #EEF2FF;
+      --grn: #059669;
+      --grn-lt: #ECFDF5;
+      --red: #DC2626;
+      --red-lt: #FEF2F2;
+      --bg: #F1F5F9;
+      --card: #FFFFFF;
+      --txt: #111827;
+      --txt2: #6B7280;
+      --bdr: #E5E7EB;
+      --sh: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --sh-lg: 0 10px 25px rgba(0,0,0,.12);
+      --r: 14px;
+      --sai-top: env(safe-area-inset-top, 0px);
+      --sai-bot: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Layout ─────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      height: 100dvh;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    .hdr {
+      background: var(--pri);
+      color: #fff;
+      padding: calc(14px + var(--sai-top)) 20px 14px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hdr svg { width: 24px; height: 24px; flex-shrink: 0; }
+    .hdr h1 { font-size: 19px; font-weight: 700; letter-spacing: -.3px; }
+
+    /* ── List ────────────────────────────────────────── */
+    #list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px 90px;
+      -webkit-overflow-scrolling: touch;
+    }
+    #list::-webkit-scrollbar { width: 3px; }
+    #list::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 2px; }
+
+    /* ── Empty state ─────────────────────────────────── */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 64px 32px;
+      gap: 10px;
+    }
+    .empty-ico {
+      width: 72px; height: 72px;
+      background: var(--pri-lt);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+      margin-bottom: 4px;
+    }
+    .empty h3 { font-size: 18px; font-weight: 700; color: var(--txt); }
+    .empty p { font-size: 14px; color: var(--txt2); line-height: 1.5; }
+
+    /* ── Month header ────────────────────────────────── */
+    .mo-hdr {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--txt2);
+      padding: 10px 2px 6px;
+    }
+
+    /* ── Entry card ──────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 14px 14px 14px 18px;
+      margin-bottom: 10px;
+      box-shadow: var(--sh);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+    }
+    .card.ot::before { background: var(--pri); }
+    .card.co::before { background: var(--grn); }
+
+    .c-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .c-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--txt2);
+    }
+    .c-acts { display: flex; gap: 2px; }
+    .c-btn {
+      background: none; border: none; cursor: pointer;
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--txt2);
+      transition: background .15s, color .15s;
+    }
+    .c-btn svg { width: 16px; height: 16px; }
+    .c-btn:hover { background: var(--bg); }
+    .c-btn.del:hover { color: var(--red); background: var(--red-lt); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      padding: 3px 8px; border-radius: 20px;
+      margin-bottom: 8px;
+    }
+    .ot .badge { background: var(--pri-lt); color: var(--pri); }
+    .co .badge { background: var(--grn-lt); color: var(--grn); }
+
+    .times-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 15px; font-weight: 600;
+    }
+    .arrow-ic { width: 14px; height: 14px; color: var(--txt2); flex-shrink: 0; }
+    .dur-pill {
+      margin-left: auto;
+      background: var(--bg);
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; color: var(--txt2);
+    }
+    .c-desc {
+      font-size: 13px; color: var(--txt2);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .c-comp {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px solid var(--bdr);
+      font-size: 13px;
+    }
+    .c-comp .lbl { color: var(--txt2); }
+    .c-comp .val { font-weight: 700; color: var(--grn); margin-left: auto; }
+
+    /* ── Summary bar ─────────────────────────────────── */
+    #summary {
+      background: var(--card);
+      border-top: 1px solid var(--bdr);
+      padding: 12px 20px calc(12px + var(--sai-bot));
+      flex-shrink: 0;
+      box-shadow: 0 -4px 16px rgba(0,0,0,.07);
+    }
+    .sum-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .sum-item { display: flex; flex-direction: column; gap: 3px; }
+    .sum-lbl {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--txt2);
+    }
+    .sum-val { font-size: 17px; font-weight: 800; color: var(--txt); }
+    .sum-item.s-ot .sum-val { color: var(--pri); }
+    .sum-item.s-ea .sum-val { color: var(--grn); }
+    .sum-item.s-us .sum-val { color: var(--red); }
+
+    /* ── FAB ─────────────────────────────────────────── */
+    #fab {
+      position: fixed;
+      right: 20px;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--pri);
+      color: #fff; border: none; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 300; line-height: 1;
+      transition: transform .15s, box-shadow .15s;
+      z-index: 100;
+    }
+    #fab:hover { transform: scale(1.06); box-shadow: 0 6px 18px rgba(79,70,229,.55); }
+    #fab:active { transform: scale(.94); }
+
+    /* ── Modal overlay ───────────────────────────────── */
+    #overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    #overlay.show { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 22px 22px 0 0;
+      width: 100%;
+      max-height: 93dvh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      padding-bottom: calc(24px + var(--sai-bot));
+      -webkit-overflow-scrolling: touch;
+    }
+    #overlay.show .modal { transform: translateY(0); }
+
+    .modal-drag {
+      width: 38px; height: 4px;
+      background: var(--bdr);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .modal-hdr {
+      padding: 14px 18px 14px;
+      border-bottom: 1px solid var(--bdr);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-close {
+      background: var(--bg); border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--txt2); font-size: 17px;
+    }
+    .modal-body { padding: 18px 18px 0; }
+
+    /* ── Type toggle ─────────────────────────────────── */
+    #type-toggle {
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: var(--bg);
+      border-radius: 10px; padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tog-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 10px 8px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      color: var(--txt2);
+      transition: all .2s;
+    }
+    .tog-btn.on {
+      background: var(--card);
+      color: var(--txt);
+      box-shadow: var(--sh);
+    }
+
+    /* ── Form ────────────────────────────────────────── */
+    .fg { margin-bottom: 16px; }
+    .fl {
+      display: block;
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      color: var(--txt2);
+      margin-bottom: 6px;
+    }
+    .fc {
+      width: 100%; padding: 13px 14px;
+      background: var(--bg);
+      border: 2px solid transparent; border-radius: 10px;
+      font-size: 16px; color: var(--txt);
+      font-family: inherit;
+      -webkit-appearance: none;
+      transition: border-color .15s, background .15s;
+    }
+    .fc:focus { outline: none; border-color: var(--pri); background: #fff; }
+    .fc::placeholder { color: var(--txt2); }
+
+    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Quick durations ─────────────────────────────── */
+    .qdur-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .qdur-lbl {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      color: var(--txt2); margin-bottom: 6px;
+      display: block;
+    }
+    .qd-btn {
+      background: var(--pri-lt); color: var(--pri);
+      border: none; cursor: pointer;
+      padding: 9px 13px; border-radius: 9px;
+      font-size: 13px; font-weight: 700;
+      transition: all .15s;
+    }
+    .qd-btn:hover, .qd-btn:active { background: var(--pri); color: #fff; }
+
+    /* ── Calc display ────────────────────────────────── */
+    .calc-box {
+      background: var(--bg); border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .calc-item { display: flex; flex-direction: column; gap: 3px; }
+    .calc-lbl {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--txt2);
+    }
+    .calc-val { font-size: 20px; font-weight: 800; }
+    .calc-item.dur .calc-val { color: var(--pri); }
+    .calc-item.com .calc-val { color: var(--grn); }
+
+    /* ── Duration selects ────────────────────────────── */
+    .dur-row { display: flex; align-items: center; gap: 8px; }
+    .dur-row select {
+      flex: 1; padding: 13px 12px;
+      background: var(--bg);
+      border: 2px solid transparent; border-radius: 10px;
+      font-size: 16px; color: var(--txt);
+      font-family: inherit; -webkit-appearance: none;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .dur-row select:focus { outline: none; border-color: var(--pri); background: #fff; }
+    .dur-sep { font-size: 20px; font-weight: 700; color: var(--txt2); flex-shrink: 0; }
+
+    /* ── Save button ─────────────────────────────────── */
+    .btn-save {
+      width: 100%; padding: 16px;
+      background: var(--pri); color: #fff;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 6px;
+      transition: background .15s, transform .1s;
+    }
+    .btn-save:hover { background: var(--pri-dk); }
+    .btn-save:active { transform: scale(.98); }
+
+    /* ── Delete confirm ──────────────────────────────── */
+    #confirm-dlg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    #confirm-dlg.show { opacity: 1; pointer-events: all; }
+    .dlg-box {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 24px;
+      width: 100%; max-width: 320px;
+      box-shadow: var(--sh-lg);
+      transform: scale(.95);
+      transition: transform .2s;
+    }
+    #confirm-dlg.show .dlg-box { transform: scale(1); }
+    .dlg-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .dlg-box p { font-size: 14px; color: var(--txt2); margin-bottom: 20px; line-height: 1.5; }
+    .dlg-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-cancel {
+      padding: 13px; background: var(--bg); border: none;
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; color: var(--txt);
+    }
+    .btn-del {
+      padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; font-size: 15px; font-weight: 700;
+      cursor: pointer; color: #fff;
+    }
+
+    /* ── Toast ───────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1f2937; color: #fff;
+      padding: 10px 18px; border-radius: 24px;
+      font-size: 14px; font-weight: 500;
+      opacity: 0; transition: opacity .2s, transform .2s;
+      z-index: 400; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <header class="hdr">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+    <h1>Horas Extra</h1>
+  </header>
+
+  <main id="list"></main>
+
+  <footer id="summary">
+    <div class="sum-grid">
+      <div class="sum-item s-ot">
+        <span class="sum-lbl">Horas Extra</span>
+        <span class="sum-val" id="sumOt">0h</span>
+      </div>
+      <div class="sum-item s-ea">
+        <span class="sum-lbl">Comp. Obtida</span>
+        <span class="sum-val" id="sumEarned">0h</span>
+      </div>
+      <div class="sum-item s-us">
+        <span class="sum-lbl">Comp. Usada</span>
+        <span class="sum-val" id="sumUsed">0h</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<button id="fab" aria-label="Adicionar entrada">+</button>
+
+<!-- Add / Edit modal -->
+<div id="overlay">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr">
+      <span class="modal-title" id="modal-title">Nova Entrada</span>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div id="type-toggle">
+        <button class="tog-btn on" id="btn-ot">⏰ Horas Extra</button>
+        <button class="tog-btn" id="btn-co">✅ Compensação</button>
+      </div>
+
+      <!-- Overtime form -->
+      <div id="form-ot">
+        <div class="fg">
+          <label class="fl" for="iDate">Data</label>
+          <input type="date" class="fc" id="iDate">
+        </div>
+        <div class="fg">
+          <label class="fl">Horário</label>
+          <div class="time-row">
+            <input type="time" class="fc" id="iStart" step="300" placeholder="Início">
+            <input type="time" class="fc" id="iEnd" step="300" placeholder="Fim">
+          </div>
+        </div>
+        <div class="fg">
+          <span class="qdur-lbl">Duração rápida (a partir da hora de início)</span>
+          <div class="qdur-wrap">
+            <button class="qd-btn" data-m="30">30min</button>
+            <button class="qd-btn" data-m="45">45min</button>
+            <button class="qd-btn" data-m="60">1h</button>
+            <button class="qd-btn" data-m="90">1h30</button>
+            <button class="qd-btn" data-m="120">2h</button>
+          </div>
+        </div>
+        <div class="calc-box">
+          <div class="calc-item dur">
+            <span class="calc-lbl">Duração</span>
+            <span class="calc-val" id="calcDur">—</span>
+          </div>
+          <div class="calc-item com">
+            <span class="calc-lbl">Compensação</span>
+            <span class="calc-val" id="calcComp">—</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl" for="iDesc">Descrição</label>
+          <input type="text" class="fc" id="iDesc" placeholder="Ex: Reunião de projeto" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Compensation form -->
+      <div id="form-co" style="display:none">
+        <div class="fg">
+          <label class="fl" for="iCoDate">Data</label>
+          <input type="date" class="fc" id="iCoDate">
+        </div>
+        <div class="fg">
+          <label class="fl">Duração</label>
+          <div class="dur-row">
+            <select id="iCoH"></select>
+            <span class="dur-sep">:</span>
+            <select id="iCoM"></select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-save" id="btn-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div id="confirm-dlg">
+  <div class="dlg-box">
+    <h3>Eliminar entrada</h3>
+    <p>Tens a certeza que queres eliminar esta entrada? Esta ação não pode ser desfeita.</p>
+    <div class="dlg-acts">
+      <button class="btn-cancel" id="btn-cancel-del">Cancelar</button>
+      <button class="btn-del" id="btn-confirm-del">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────
+const KEY = 'horas-extra-v1';
+let entries = [];
+let editId = null;
+let delId  = null;
+let curType = 'overtime';
+
+// ── Storage ──────────────────────────────────────────────
+function load() {
+  try { entries = JSON.parse(localStorage.getItem(KEY) || '[]'); }
+  catch { entries = []; }
+}
+function persist() { localStorage.setItem(KEY, JSON.stringify(entries)); }
+
+// ── Utils ─────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function roundTo5(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const r = Math.round((h * 60 + m) / 5) * 5;
+  return pad(Math.floor(r / 60) % 24) + ':' + pad(r % 60);
+}
+
+function addMins(t, mins) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const tot = h * 60 + m + mins;
+  return pad(Math.floor(tot / 60) % 24) + ':' + pad(tot % 60);
+}
+
+function diffMins(s, e) {
+  const [sh, sm] = s.split(':').map(Number);
+  const [eh, em] = e.split(':').map(Number);
+  let d = (eh * 60 + em) - (sh * 60 + sm);
+  if (d <= 0) d += 1440;
+  return d;
+}
+
+function compensation(mins) {
+  return mins <= 60 ? mins * 1.5 : 90 + (mins - 60) * 1.75;
+}
+
+function fmtDur(mins) {
+  if (mins == null || isNaN(mins) || mins < 0) return '—';
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  if (h === 0) return m + 'min';
+  if (m === 0) return h + 'h';
+  return h + 'h' + pad(m);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, mo, day] = d.split('-').map(Number);
+  return new Date(y, mo - 1, day).toLocaleDateString('pt-PT', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+  });
+}
+
+function monthLabel(d) {
+  if (!d) return '';
+  const [y, mo] = d.split('-').map(Number);
+  const s = new Date(y, mo - 1, 1).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function today() { return new Date().toISOString().slice(0, 10); }
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Render ────────────────────────────────────────────────
+function render() { renderList(); renderSummary(); positionFab(); }
+
+function renderList() {
+  const el = document.getElementById('list');
+  if (!entries.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-ico">⏱️</div>
+        <h3>Sem registos</h3>
+        <p>Toca no <strong>+</strong> para adicionar o teu primeiro registo.</p>
+      </div>`;
+    return;
+  }
+
+  const sorted = [...entries].sort((a, b) => {
+    const d = b.date.localeCompare(a.date);
+    if (d) return d;
+    if (a.startTime && b.startTime) return b.startTime.localeCompare(a.startTime);
+    return 0;
+  });
+
+  const groups = {};
+  sorted.forEach(e => { const k = monthLabel(e.date); (groups[k] = groups[k] || []).push(e); });
+
+  el.innerHTML = Object.entries(groups).map(([mo, items]) =>
+    `<div class="mo-hdr">${mo}</div>${items.map(cardHtml).join('')}`
+  ).join('');
+
+  el.querySelectorAll('[data-edit]').forEach(b =>
+    b.addEventListener('click', () => openEdit(b.dataset.edit))
+  );
+  el.querySelectorAll('[data-del]').forEach(b =>
+    b.addEventListener('click', () => openDel(b.dataset.del))
+  );
+}
+
+const editSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const delSvg  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+const arrowSvg = `<svg class="arrow-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>`;
+
+function actions(id) {
+  return `<div class="c-acts">
+    <button class="c-btn" data-edit="${id}" aria-label="Editar">${editSvg}</button>
+    <button class="c-btn del" data-del="${id}" aria-label="Eliminar">${delSvg}</button>
+  </div>`;
+}
+
+function cardHtml(e) {
+  if (e.type === 'overtime') {
+    return `<div class="card ot">
+      <div class="c-head">
+        <span class="c-date">${fmtDate(e.date)}</span>
+        ${actions(e.id)}
+      </div>
+      <span class="badge">Horas Extra</span>
+      <div class="times-row">
+        <span>${e.startTime}</span>
+        ${arrowSvg}
+        <span>${e.endTime}</span>
+        <span class="dur-pill">${fmtDur(e.durationMinutes)}</span>
+      </div>
+      ${e.description ? `<div class="c-desc">${esc(e.description)}</div>` : ''}
+      <div class="c-comp">
+        <span class="lbl">Compensação obtida</span>
+        <span class="val">${fmtDur(e.compensationMinutes)}</span>
+      </div>
+    </div>`;
+  } else {
+    return `<div class="card co">
+      <div class="c-head">
+        <span class="c-date">${fmtDate(e.date)}</span>
+        ${actions(e.id)}
+      </div>
+      <span class="badge">Compensação Usada</span>
+      <div class="times-row">
+        <span class="dur-pill" style="margin-left:0">${fmtDur(e.durationMinutes)}</span>
+      </div>
+    </div>`;
+  }
+}
+
+function renderSummary() {
+  const ot = entries.filter(e => e.type === 'overtime');
+  const co = entries.filter(e => e.type === 'compensation');
+  document.getElementById('sumOt').textContent     = fmtDur(ot.reduce((s, e) => s + e.durationMinutes, 0));
+  document.getElementById('sumEarned').textContent = fmtDur(ot.reduce((s, e) => s + e.compensationMinutes, 0));
+  document.getElementById('sumUsed').textContent   = fmtDur(co.reduce((s, e) => s + e.durationMinutes, 0));
+}
+
+function positionFab() {
+  const sum = document.getElementById('summary');
+  document.getElementById('fab').style.bottom = (sum.offsetHeight + 14) + 'px';
+}
+
+// ── Modal ─────────────────────────────────────────────────
+function openAdd() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Nova Entrada';
+  document.getElementById('type-toggle').style.display = 'grid';
+  document.getElementById('iDate').value    = today();
+  document.getElementById('iStart').value   = '';
+  document.getElementById('iEnd').value     = '';
+  document.getElementById('iDesc').value    = '';
+  document.getElementById('iCoDate').value  = today();
+  document.getElementById('iCoH').value     = '0';
+  document.getElementById('iCoM').value     = '0';
+  setType('overtime');
+  updateCalc();
+  showModal();
+}
+
+function openEdit(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar Entrada';
+  document.getElementById('type-toggle').style.display = 'none';
+  if (e.type === 'overtime') {
+    document.getElementById('iDate').value  = e.date;
+    document.getElementById('iStart').value = e.startTime;
+    document.getElementById('iEnd').value   = e.endTime;
+    document.getElementById('iDesc').value  = e.description || '';
+  } else {
+    document.getElementById('iCoDate').value = e.date;
+    document.getElementById('iCoH').value    = String(Math.floor(e.durationMinutes / 60));
+    document.getElementById('iCoM').value    = String(e.durationMinutes % 60);
+  }
+  setType(e.type);
+  updateCalc();
+  showModal();
+}
+
+function showModal() {
+  document.getElementById('overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function hideModal() {
+  document.getElementById('overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function setType(t) {
+  curType = t;
+  document.getElementById('btn-ot').classList.toggle('on', t === 'overtime');
+  document.getElementById('btn-co').classList.toggle('on', t === 'compensation');
+  document.getElementById('form-ot').style.display = t === 'overtime'     ? '' : 'none';
+  document.getElementById('form-co').style.display = t === 'compensation' ? '' : 'none';
+}
+
+function updateCalc() {
+  const s = document.getElementById('iStart').value;
+  const e = document.getElementById('iEnd').value;
+  if (s && e) {
+    const d = diffMins(s, e);
+    document.getElementById('calcDur').textContent  = fmtDur(d);
+    document.getElementById('calcComp').textContent = fmtDur(compensation(d));
+  } else {
+    document.getElementById('calcDur').textContent  = '—';
+    document.getElementById('calcComp').textContent = '—';
+  }
+}
+
+function save() {
+  if (curType === 'overtime') {
+    const date  = document.getElementById('iDate').value;
+    const start = roundTo5(document.getElementById('iStart').value);
+    const end   = roundTo5(document.getElementById('iEnd').value);
+    const desc  = document.getElementById('iDesc').value.trim();
+    if (!date || !start || !end) { toast('Preenche a data e os horários.'); return; }
+    const dur = diffMins(start, end);
+    upsert({ id: editId || uid(), type: 'overtime', date, startTime: start, endTime: end,
+             description: desc, durationMinutes: dur, compensationMinutes: compensation(dur) });
+  } else {
+    const date = document.getElementById('iCoDate').value;
+    const h    = parseInt(document.getElementById('iCoH').value) || 0;
+    const m    = parseInt(document.getElementById('iCoM').value) || 0;
+    const dur  = h * 60 + m;
+    if (!date || dur === 0) { toast('Preenche a data e a duração.'); return; }
+    upsert({ id: editId || uid(), type: 'compensation', date,
+             durationMinutes: dur, compensationMinutes: dur });
+  }
+  persist();
+  render();
+  hideModal();
+  toast(editId ? 'Entrada atualizada.' : 'Entrada adicionada.');
+}
+
+function upsert(entry) {
+  const i = entries.findIndex(e => e.id === entry.id);
+  if (i >= 0) entries[i] = entry; else entries.push(entry);
+}
+
+// ── Delete ────────────────────────────────────────────────
+function openDel(id) {
+  delId = id;
+  document.getElementById('confirm-dlg').classList.add('show');
+}
+function closeDel() {
+  delId = null;
+  document.getElementById('confirm-dlg').classList.remove('show');
+}
+function doDelete() {
+  entries = entries.filter(e => e.id !== delId);
+  persist();
+  render();
+  closeDel();
+  toast('Entrada eliminada.');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Init ──────────────────────────────────────────────────
+function init() {
+  // Populate compensation selects
+  const hSel = document.getElementById('iCoH');
+  const mSel = document.getElementById('iCoM');
+  for (let i = 0; i <= 23; i++) hSel.add(new Option(i + 'h', i));
+  for (let i = 0; i < 60; i += 5) mSel.add(new Option(pad(i) + 'min', i));
+
+  load();
+  render();
+
+  // FAB & resize
+  document.getElementById('fab').addEventListener('click', openAdd);
+  window.addEventListener('resize', positionFab);
+
+  // Modal
+  document.getElementById('modal-close').addEventListener('click', hideModal);
+  document.getElementById('overlay').addEventListener('click', e => {
+    if (e.target.id === 'overlay') hideModal();
+  });
+
+  // Type toggle
+  document.getElementById('btn-ot').addEventListener('click', () => setType('overtime'));
+  document.getElementById('btn-co').addEventListener('click', () => setType('compensation'));
+
+  // Time inputs
+  document.getElementById('iStart').addEventListener('input', updateCalc);
+  document.getElementById('iEnd').addEventListener('input',   updateCalc);
+  document.getElementById('iStart').addEventListener('blur', function() {
+    if (this.value) { this.value = roundTo5(this.value); updateCalc(); }
+  });
+  document.getElementById('iEnd').addEventListener('blur', function() {
+    if (this.value) { this.value = roundTo5(this.value); updateCalc(); }
+  });
+
+  // Quick duration buttons
+  document.querySelectorAll('.qd-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const mins = +b.dataset.m;
+      let s = document.getElementById('iStart').value;
+      if (!s) {
+        const now = new Date();
+        s = roundTo5(pad(now.getHours()) + ':' + pad(now.getMinutes()));
+        document.getElementById('iStart').value = s;
+      }
+      document.getElementById('iEnd').value = addMins(s, mins);
+      updateCalc();
+    });
+  });
+
+  // Save
+  document.getElementById('btn-save').addEventListener('click', save);
+
+  // Delete confirm
+  document.getElementById('btn-cancel-del').addEventListener('click', closeDel);
+  document.getElementById('btn-confirm-del').addEventListener('click', doDelete);
+  document.getElementById('confirm-dlg').addEventListener('click', e => {
+    if (e.target.id === 'confirm-dlg') closeDel();
+  });
+
+  // PWA service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
