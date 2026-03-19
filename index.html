@@ -63,7 +63,16 @@
       gap: 10px;
     }
     .hdr svg { width: 24px; height: 24px; flex-shrink: 0; }
-    .hdr h1 { font-size: 19px; font-weight: 700; letter-spacing: -.3px; }
+    .hdr h1 { font-size: 19px; font-weight: 700; letter-spacing: -.3px; flex: 1; }
+    .hdr-acts { display: flex; gap: 4px; margin-left: auto; }
+    .hdr-btn {
+      background: rgba(255,255,255,.15); border: none; cursor: pointer;
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; transition: background .15s;
+    }
+    .hdr-btn:hover { background: rgba(255,255,255,.25); }
+    .hdr-btn svg { width: 18px; height: 18px; }
 
     /* ── List ────────────────────────────────────────── */
     #list {
@@ -406,6 +415,67 @@
       cursor: pointer; color: #fff;
     }
 
+    /* ── About overlay ───────────────────────────────── */
+    #about-dlg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    #about-dlg.show { opacity: 1; pointer-events: all; }
+    .about-box {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%; max-width: 360px;
+      max-height: 80dvh;
+      overflow-y: auto;
+      box-shadow: var(--sh-lg);
+      transform: scale(.95);
+      transition: transform .2s;
+      -webkit-overflow-scrolling: touch;
+    }
+    #about-dlg.show .about-box { transform: scale(1); }
+    .about-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .about-hdr h3 { font-size: 18px; font-weight: 700; }
+    .about-close {
+      background: var(--bg); border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--txt2); font-size: 17px;
+    }
+    .about-section { margin-bottom: 18px; }
+    .about-section:last-child { margin-bottom: 0; }
+    .about-section h4 {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      color: var(--txt2); margin-bottom: 8px;
+    }
+    .about-section p { font-size: 14px; color: var(--txt); line-height: 1.6; }
+    .formula-box {
+      background: var(--bg); border-radius: 10px;
+      padding: 12px 14px; margin-top: 8px;
+      font-size: 13px; line-height: 1.8;
+    }
+    .formula-box .f-row { display: flex; gap: 8px; align-items: baseline; }
+    .formula-box .f-cond { color: var(--txt2); font-size: 12px; min-width: 90px; }
+    .formula-box .f-expr { font-weight: 700; color: var(--pri); font-family: 'Courier New', monospace; }
+    .example-grid {
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 6px 10px; margin-top: 8px;
+      font-size: 13px; align-items: center;
+    }
+    .ex-in { font-weight: 600; color: var(--txt); }
+    .ex-arr { color: var(--txt2); }
+    .ex-out { font-weight: 700; color: var(--grn); }
+    .about-ver { font-size: 12px; color: var(--txt2); text-align: center; margin-top: 16px; }
+
     /* ── Toast ───────────────────────────────────────── */
     #toast {
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -427,6 +497,22 @@
       <polyline points="12 6 12 12 16 14"/>
     </svg>
     <h1>Horas Extra</h1>
+    <div class="hdr-acts">
+      <button class="hdr-btn" id="btn-export" aria-label="Exportar CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+      <button class="hdr-btn" id="btn-about" aria-label="Sobre a aplicação">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <main id="list"></main>
@@ -540,6 +626,66 @@
       <button class="btn-cancel" id="btn-cancel-del">Cancelar</button>
       <button class="btn-del" id="btn-confirm-del">Eliminar</button>
     </div>
+  </div>
+</div>
+
+<!-- About dialog -->
+<div id="about-dlg">
+  <div class="about-box">
+    <div class="about-hdr">
+      <h3>Sobre — Horas Extra</h3>
+      <button class="about-close" id="about-close">✕</button>
+    </div>
+
+    <div class="about-section">
+      <h4>O que é esta app?</h4>
+      <p>Regista as tuas horas extra e calcula automaticamente o tempo de compensação a que tens direito, de acordo com os multiplicadores legais.</p>
+    </div>
+
+    <div class="about-section">
+      <h4>Fórmula de Compensação</h4>
+      <p>A compensação varia consoante a duração do período de trabalho extra:</p>
+      <div class="formula-box">
+        <div class="f-row">
+          <span class="f-cond">Até 60 min →</span>
+          <span class="f-expr">comp = duração × 1,5</span>
+        </div>
+        <div class="f-row">
+          <span class="f-cond">Mais de 60 min →</span>
+          <span class="f-expr">comp = 90 + (excedente × 1,75)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h4>Exemplos</h4>
+      <div class="example-grid">
+        <span class="ex-in">30 min extra</span>
+        <span class="ex-arr">→</span>
+        <span class="ex-out">45 min comp.</span>
+        <span class="ex-in">60 min extra</span>
+        <span class="ex-arr">→</span>
+        <span class="ex-out">90 min comp.</span>
+        <span class="ex-in">90 min extra</span>
+        <span class="ex-arr">→</span>
+        <span class="ex-out">142,5 min comp.</span>
+        <span class="ex-in">120 min extra</span>
+        <span class="ex-arr">→</span>
+        <span class="ex-out">195 min comp.</span>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h4>Dia de trabalho</h4>
+      <p>O saldo de compensação obtida é também apresentado em dias completos de trabalho, considerando <strong>7 horas por dia</strong> (420 minutos).</p>
+    </div>
+
+    <div class="about-section">
+      <h4>Exportar dados</h4>
+      <p>Usa o botão de exportação <strong>↓</strong> no cabeçalho para descarregar todos os registos em formato CSV, compatível com Excel e Google Sheets.</p>
+    </div>
+
+    <p class="about-ver">Horas Extra • Dados guardados localmente</p>
   </div>
 </div>
 
@@ -860,6 +1006,45 @@ function doDelete() {
   toast('Entrada eliminada.');
 }
 
+// ── CSV Export ────────────────────────────────────────────
+function exportCsv() {
+  if (!entries.length) { toast('Sem registos para exportar.'); return; }
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const rows = [['Tipo', 'Data', 'Início', 'Fim', 'Duração (min)', 'Compensação (min)', 'Descrição']];
+  sorted.forEach(e => {
+    rows.push([
+      e.type === 'overtime' ? 'Horas Extra' : 'Compensação Usada',
+      e.date,
+      e.startTime || '',
+      e.endTime   || '',
+      e.durationMinutes,
+      e.compensationMinutes,
+      e.description || ''
+    ]);
+  });
+  const csv = rows.map(r =>
+    r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
+  ).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'horas-extra.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Ficheiro CSV exportado.');
+}
+
+// ── About ─────────────────────────────────────────────────
+function openAbout() {
+  document.getElementById('about-dlg').classList.add('show');
+}
+function closeAbout() {
+  document.getElementById('about-dlg').classList.remove('show');
+}
+
 // ── Toast ─────────────────────────────────────────────────
 let toastTimer;
 function toast(msg) {
@@ -928,6 +1113,16 @@ function init() {
   document.getElementById('btn-confirm-del').addEventListener('click', doDelete);
   document.getElementById('confirm-dlg').addEventListener('click', e => {
     if (e.target.id === 'confirm-dlg') closeDel();
+  });
+
+  // Export CSV
+  document.getElementById('btn-export').addEventListener('click', exportCsv);
+
+  // About
+  document.getElementById('btn-about').addEventListener('click', openAbout);
+  document.getElementById('about-close').addEventListener('click', closeAbout);
+  document.getElementById('about-dlg').addEventListener('click', e => {
+    if (e.target.id === 'about-dlg') closeAbout();
   });
 
   // PWA service worker
