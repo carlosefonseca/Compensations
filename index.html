@@ -137,6 +137,8 @@
       color: var(--txt2);
     }
     .c-acts { display: flex; gap: 2px; }
+    .c-head-left { display: flex; align-items: center; gap: 6px; }
+    .c-head-left .badge { margin-bottom: 0; }
     .c-btn {
       background: none; border: none; cursor: pointer;
       width: 34px; height: 34px;
@@ -175,14 +177,10 @@
       margin-top: 6px;
       line-height: 1.4;
     }
-    .c-comp {
-      display: flex; align-items: center; gap: 6px;
-      margin-top: 8px; padding-top: 8px;
-      border-top: 1px solid var(--bdr);
-      font-size: 13px;
+    .comp-val {
+      font-size: 13px; font-weight: 700;
+      color: var(--grn);
     }
-    .c-comp .lbl { color: var(--txt2); }
-    .c-comp .val { font-weight: 700; color: var(--grn); margin-left: auto; }
 
     /* ── Summary bar ─────────────────────────────────── */
     #summary {
@@ -194,19 +192,22 @@
     }
     .sum-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 12px;
     }
-    .sum-item { display: flex; flex-direction: column; gap: 3px; }
+    .sum-item { display: flex; flex-direction: column; gap: 2px; }
     .sum-lbl {
       font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .5px;
       color: var(--txt2);
     }
-    .sum-val { font-size: 17px; font-weight: 800; color: var(--txt); }
+    .sum-val { font-size: 16px; font-weight: 800; color: var(--txt); }
+    .sum-sub { font-size: 10px; font-weight: 600; color: var(--grn); }
     .sum-item.s-ot .sum-val { color: var(--pri); }
     .sum-item.s-ea .sum-val { color: var(--grn); }
     .sum-item.s-us .sum-val { color: var(--red); }
+    .sum-item.s-bl .sum-val { color: var(--grn); }
+    .sum-item.s-bl .sum-val.neg { color: var(--red); }
 
     /* ── FAB ─────────────────────────────────────────── */
     #fab {
@@ -439,10 +440,15 @@
       <div class="sum-item s-ea">
         <span class="sum-lbl">Comp. Obtida</span>
         <span class="sum-val" id="sumEarned">0h</span>
+        <span class="sum-sub" id="sumEarnedDays" style="display:none"></span>
       </div>
       <div class="sum-item s-us">
         <span class="sum-lbl">Comp. Usada</span>
         <span class="sum-val" id="sumUsed">0h</span>
+      </div>
+      <div class="sum-item s-bl">
+        <span class="sum-lbl">Saldo</span>
+        <span class="sum-val" id="sumBalance">0h</span>
       </div>
     </div>
   </footer>
@@ -671,29 +677,30 @@ function cardHtml(e) {
   if (e.type === 'overtime') {
     return `<div class="card ot">
       <div class="c-head">
-        <span class="c-date">${fmtDate(e.date)}</span>
+        <div class="c-head-left">
+          <span class="badge">Horas Extra</span>
+          <span class="c-date">${fmtDate(e.date)}</span>
+        </div>
         ${actions(e.id)}
       </div>
-      <span class="badge">Horas Extra</span>
       <div class="times-row">
         <span>${e.startTime}</span>
         ${arrowSvg}
         <span>${e.endTime}</span>
         <span class="dur-pill">${fmtDur(e.durationMinutes)}</span>
+        <span class="comp-val">+${fmtDur(e.compensationMinutes)}</span>
       </div>
       ${e.description ? `<div class="c-desc">${esc(e.description)}</div>` : ''}
-      <div class="c-comp">
-        <span class="lbl">Compensação obtida</span>
-        <span class="val">${fmtDur(e.compensationMinutes)}</span>
-      </div>
     </div>`;
   } else {
     return `<div class="card co">
       <div class="c-head">
-        <span class="c-date">${fmtDate(e.date)}</span>
+        <div class="c-head-left">
+          <span class="badge">Compensação Usada</span>
+          <span class="c-date">${fmtDate(e.date)}</span>
+        </div>
         ${actions(e.id)}
       </div>
-      <span class="badge">Compensação Usada</span>
       <div class="times-row">
         <span class="dur-pill" style="margin-left:0">${fmtDur(e.durationMinutes)}</span>
       </div>
@@ -704,9 +711,33 @@ function cardHtml(e) {
 function renderSummary() {
   const ot = entries.filter(e => e.type === 'overtime');
   const co = entries.filter(e => e.type === 'compensation');
+  const earned  = ot.reduce((s, e) => s + e.compensationMinutes, 0);
+  const used    = co.reduce((s, e) => s + e.durationMinutes, 0);
+  const balance = earned - used;
+
   document.getElementById('sumOt').textContent     = fmtDur(ot.reduce((s, e) => s + e.durationMinutes, 0));
-  document.getElementById('sumEarned').textContent = fmtDur(ot.reduce((s, e) => s + e.compensationMinutes, 0));
-  document.getElementById('sumUsed').textContent   = fmtDur(co.reduce((s, e) => s + e.durationMinutes, 0));
+  document.getElementById('sumEarned').textContent = fmtDur(earned);
+  document.getElementById('sumUsed').textContent   = fmtDur(used);
+
+  // 7h days sub-label for earned compensation
+  const days = Math.floor(earned / 420);
+  const daysEl = document.getElementById('sumEarnedDays');
+  if (days >= 1) {
+    daysEl.textContent = days + (days === 1 ? ' dia de 7h' : ' dias de 7h');
+    daysEl.style.display = '';
+  } else {
+    daysEl.style.display = 'none';
+  }
+
+  // Remaining balance
+  const balEl = document.getElementById('sumBalance');
+  if (balance < 0) {
+    balEl.textContent = '-' + fmtDur(-balance);
+    balEl.classList.add('neg');
+  } else {
+    balEl.textContent = fmtDur(balance);
+    balEl.classList.remove('neg');
+  }
 }
 
 function positionFab() {
